@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Users - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-users me-2"></i>
+                        User Management
+                    </h3>
+                    <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add New User
+                    </a>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Search and Filter Form -->
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <form method="GET" class="d-flex">
+                                <input type="text" 
+                                       name="search" 
+                                       class="form-control me-2" 
+                                       placeholder="Search by username, email, or name..."
+                                       value="{{ search }}"
+                                       style="max-width: 300px;">
+                                
+                                <select name="role" class="form-select me-2" style="max-width: 150px;">
+                                    <option value="">All Roles</option>
+                                    <option value="student" {{ 'selected' if role_filter == 'student' }}>Student</option>
+                                    <option value="faculty" {{ 'selected' if role_filter == 'faculty' }}>Faculty</option>
+                                    <option value="admin" {{ 'selected' if role_filter == 'admin' }}>Admin</option>
+                                </select>
+                                
+                                <button type="submit" class="btn btn-outline-primary me-2">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                
+                                <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </form>
+                        </div>
+                        
+                        <div class="col-md-4 text-end">
+                            <span class="text-muted">
+                                Total: {{ users.total }} users
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Users Table -->
+                    {% if users.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Phone</th>
+                                    <th>Student ID</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for user_item in users.items %}
+                                <tr>
+                                    <td>{{ user_item.id }}</td>
+                                    <td>
+                                        <strong>{{ user_item.username }}</strong>
+                                        {% if user_item.id == user.id %}
+                                            <span class="badge bg-info ms-1">You</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ user_item.first_name }} {{ user_item.last_name }}</td>
+                                    <td>{{ user_item.email }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if user_item.role == 'admin' %}bg-danger
+                                            {% elif user_item.role == 'faculty' %}bg-warning
+                                            {% else %}bg-primary{% endif %}">
+                                            {{ user_item.role.title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ user_item.phone or '-' }}</td>
+                                    <td>{{ user_item.student_id or '-' }}</td>
+                                    <td>
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input status-toggle" 
+                                                   type="checkbox" 
+                                                   {% if user_item.is_active %}checked{% endif %}
+                                                   {% if user_item.id == user.id %}disabled{% endif %}
+                                                   data-user-id="{{ user_item.id }}"
+                                                   data-username="{{ user_item.username }}">
+                                            <label class="form-check-label">
+                                                {{ 'Active' if user_item.is_active else 'Inactive' }}
+                                            </label>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ user_item.created_at.strftime('%Y-%m-%d') if user_item.created_at }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('admin.edit_user', user_id=user_item.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Edit User">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            <button type="button" 
+                                                    class="btn btn-outline-info view-password" 
+                                                    data-user-id="{{ user_item.id }}"
+                                                    data-username="{{ user_item.username }}"
+                                                    title="View Password Info">
+                                                <i class="fas fa-key"></i>
+                                            </button>
+                                            
+                                            {% if user_item.id != user.id %}
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger delete-user" 
+                                                    data-user-id="{{ user_item.id }}"
+                                                    data-username="{{ user_item.username }}"
+                                                    title="Delete User">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if users.pages > 1 %}
+                    <nav aria-label="User pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if users.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin.manage_users', page=users.prev_num, search=search, role=role_filter) }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in users.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != users.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('admin.manage_users', page=page_num, search=search, role=role_filter) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if users.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin.manage_users', page=users.next_num, search=search, role=role_filter) }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No users found</h5>
+                        <p class="text-muted">
+                            {% if search or role_filter %}
+                                Try adjusting your search criteria.
+                            {% else %}
+                                Get started by adding your first user.
+                            {% endif %}
+                        </p>
+                        <a href="{{ url_for('admin.add_user') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add New User
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete user <strong id="deleteUserName"></strong>?</p>
+                <p class="text-danger small">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    This action cannot be undone and will permanently remove all user data.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Delete User
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle status toggle
+    document.querySelectorAll('.status-toggle').forEach(toggle => {
+        toggle.addEventListener('change', function() {
+            const userId = this.dataset.userId;
+            const username = this.dataset.username;
+            const isActive = this.checked;
+            
+            fetch(`/admin/users/${userId}/toggle-status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': 'disabled'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the label
+                    const label = this.nextElementSibling;
+                    label.textContent = data.is_active ? 'Active' : 'Inactive';
+                    
+                    // Show success message
+                    showAlert(data.message, 'success');
+                } else {
+                    // Revert the toggle
+                    this.checked = !isActive;
+                    showAlert(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                // Revert the toggle
+                this.checked = !isActive;
+                showAlert('Error updating user status', 'error');
+            });
+        });
+    });
+    
+    // Handle delete confirmation
+    document.querySelectorAll('.delete-user').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const username = this.dataset.username;
+            
+            document.getElementById('deleteUserName').textContent = username;
+            document.getElementById('deleteForm').action = `/admin/users/${userId}/delete`;
+            
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        });
+    });
+    
+    // Handle view password
+    document.querySelectorAll('.view-password').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const userId = this.dataset.userId;
+            const username = this.dataset.username;
+            
+            fetch(`/admin/users/${userId}/view-password`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('passwordUsername').textContent = data.username;
+                    document.getElementById('passwordNote').textContent = data.password_note;
+                    document.getElementById('passwordHash').textContent = data.password_hash;
+                    
+                    new bootstrap.Modal(document.getElementById('passwordModal')).show();
+                } else {
+                    showAlert('Error retrieving password information', 'error');
+                }
+            })
+            .catch(error => {
+                showAlert('Error retrieving password information', 'error');
+            });
+        });
+    });
+</div>
+
+<!-- Password View Modal -->
+<div class="modal fade" id="passwordModal" tabindex="-1" aria-labelledby="passwordModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="passwordModalLabel">
+                    <i class="fas fa-key text-info me-2"></i>
+                    Password Information
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Username:</label>
+                    <p id="passwordUsername" class="form-control-plaintext"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Password Security Note:</label>
+                    <p id="passwordNote" class="form-control-plaintext text-info"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Password Hash (First 50 chars):</label>
+                    <p id="passwordHash" class="form-control-plaintext text-monospace bg-light p-2 rounded"></p>
+                </div>
+                <div class="alert alert-warning" role="alert">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Security Notice:</strong> Passwords are securely hashed and cannot be retrieved in plain text. Use the "Edit User" option to reset a user's password if needed.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+function showAlert(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    // Find the first .card-body and prepend the alert
+    const cardBody = document.querySelector('.card-body');
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = alertHtml;
+    cardBody.insertBefore(tempDiv.firstElementChild, cardBody.firstChild);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        const alert = cardBody.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

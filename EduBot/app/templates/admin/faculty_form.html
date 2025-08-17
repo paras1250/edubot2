@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if mode == 'add' %}Add Faculty Member{% else %}Edit Faculty Member{% endif %} - Admin
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">
+                        {% if mode == 'add' %}
+                            <i class="fas fa-plus"></i> Add Faculty Member
+                        {% else %}
+                            <i class="fas fa-edit"></i> Edit Faculty Member
+                        {% endif %}
+                    </h4>
+                    <a href="{{ url_for('admin.manage_faculty') }}" class="btn btn-secondary float-right">
+                        <i class="fas fa-arrow-left"></i> Back to Faculty List
+                    </a>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="">
+                        <!-- Employee Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="employee_id">Employee ID <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="employee_id" name="employee_id" 
+                                           value="{% if faculty_to_edit %}{{ faculty_to_edit.employee_id }}{% elif form_data %}{{ form_data.employee_id }}{% endif %}" 
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="department">Department <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="department" name="department" 
+                                           value="{% if faculty_to_edit %}{{ faculty_to_edit.department }}{% elif form_data %}{{ form_data.department }}{% endif %}" 
+                                           required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Personal Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="first_name">First Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="first_name" name="first_name" 
+                                           value="{% if faculty_to_edit %}{{ faculty_to_edit.user.first_name }}{% elif form_data %}{{ form_data.first_name }}{% endif %}" 
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="last_name">Last Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="last_name" name="last_name" 
+                                           value="{% if faculty_to_edit %}{{ faculty_to_edit.user.last_name }}{% elif form_data %}{{ form_data.last_name }}{% endif %}" 
+                                           required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="email">Email <span class="text-danger">*</span></label>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           value="{% if faculty_to_edit %}{{ faculty_to_edit.user.email }}{% elif form_data %}{{ form_data.email }}{% endif %}" 
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="phone">Phone</label>
+                                    <input type="text" class="form-control" id="phone" name="phone" 
+                                           value="{% if faculty_to_edit %}{{ faculty_to_edit.user.phone or '' }}{% elif form_data %}{{ form_data.phone }}{% endif %}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="{% if mode == 'add' %}password{% else %}new_password{% endif %}">
+                                        {% if mode == 'add' %}Password{% else %}New Password{% endif %}
+                                        {% if mode == 'add' %}<span class="text-danger">*</span>{% endif %}
+                                    </label>
+                                    <input type="password" class="form-control" 
+                                           id="{% if mode == 'add' %}password{% else %}new_password{% endif %}" 
+                                           name="{% if mode == 'add' %}password{% else %}new_password{% endif %}"
+                                           {% if mode == 'add' %}required{% endif %}>
+                                    {% if mode == 'edit' %}
+                                        <small class="form-text text-muted">Leave blank to keep current password</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Professional Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="designation">Designation <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="designation" name="designation" 
+                                           value="{% if faculty_to_edit %}{{ faculty_to_edit.designation }}{% elif form_data %}{{ form_data.designation }}{% endif %}" 
+                                           required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="specialization">Specialization</label>
+                                    <input type="text" class="form-control" id="specialization" name="specialization" 
+                                           value="{% if faculty_to_edit %}{{ faculty_to_edit.specialization or '' }}{% elif form_data %}{{ form_data.specialization }}{% endif %}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="office_location">Office Location</label>
+                                    <input type="text" class="form-control" id="office_location" name="office_location" 
+                                           value="{% if faculty_to_edit %}{{ faculty_to_edit.office_location or '' }}{% elif form_data %}{{ form_data.office_location }}{% endif %}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="office_hours">Office Hours</label>
+                                    <input type="text" class="form-control" id="office_hours" name="office_hours" 
+                                           value="{% if faculty_to_edit %}{{ faculty_to_edit.office_hours or '' }}{% elif form_data %}{{ form_data.office_hours }}{% endif %}"
+                                           placeholder="e.g., Mon-Fri 10:00-12:00">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bio -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group">
+                                    <label for="bio">Bio/Description</label>
+                                    <textarea class="form-control" id="bio" name="bio" rows="4" 
+                                              placeholder="Brief description about the faculty member">{% if faculty_to_edit %}{{ faculty_to_edit.bio or '' }}{% elif form_data %}{{ form_data.bio }}{% endif %}</textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status -->
+                        {% if mode == 'edit' %}
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input" id="is_active" name="is_active" 
+                                           {% if faculty_to_edit and faculty_to_edit.is_active %}checked{% endif %}>
+                                    <label class="form-check-label" for="is_active">
+                                        Active
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Submit Buttons -->
+                        <div class="row mt-4">
+                            <div class="col-md-12">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save"></i> 
+                                    {% if mode == 'add' %}Add Faculty Member{% else %}Update Faculty Member{% endif %}
+                                </button>
+                                <a href="{{ url_for('admin.manage_faculty') }}" class="btn btn-secondary ml-2">
+                                    <i class="fas fa-times"></i> Cancel
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+$(document).ready(function() {
+    // Auto-generate username based on employee ID
+    $('#employee_id').on('input', function() {
+        const employeeId = $(this).val();
+        if (employeeId && '{{ mode }}' === 'add') {
+            // Username will be generated server-side as fac_employeeId
+        }
+    });
+    
+    // Form validation
+    $('form').on('submit', function(e) {
+        let isValid = true;
+        
+        // Check required fields
+        $('input[required]').each(function() {
+            if (!$(this).val().trim()) {
+                isValid = false;
+                $(this).addClass('is-invalid');
+            } else {
+                $(this).removeClass('is-invalid');
+            }
+        });
+        
+        // Check email format
+        const email = $('#email').val();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (email && !emailRegex.test(email)) {
+            isValid = false;
+            $('#email').addClass('is-invalid');
+        }
+        
+        // Check password length for new faculty
+        if ('{{ mode }}' === 'add') {
+            const password = $('#password').val();
+            if (password && password.length < 6) {
+                isValid = false;
+                $('#password').addClass('is-invalid');
+                alert('Password must be at least 6 characters long');
+            }
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Please fill in all required fields correctly');
+        }
+    });
+});
+</script>
+{% endblock %}

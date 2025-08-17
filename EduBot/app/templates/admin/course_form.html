@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        {% if mode == 'add' %}
+                            <i class="fas fa-plus"></i> Add New Course
+                        {% else %}
+                            <i class="fas fa-edit"></i> Edit Course
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <!-- Course Code -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="course_code" class="form-label">Course Code <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="course_code" name="course_code" 
+                                       placeholder="e.g., CS101, MATH201"
+                                       value="{% if course_to_edit %}{{ course_to_edit.course_code }}{% elif form_data %}{{ form_data.course_code }}{% endif %}"
+                                       required maxlength="20">
+                                <div class="form-text">Unique identifier for the course (will be converted to uppercase)</div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="credits" class="form-label">Credits <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="credits" name="credits" 
+                                       min="1" max="10"
+                                       value="{% if course_to_edit %}{{ course_to_edit.credits }}{% elif form_data %}{{ form_data.credits }}{% else %}3{% endif %}"
+                                       required>
+                            </div>
+                        </div>
+
+                        <!-- Course Name -->
+                        <div class="mb-3">
+                            <label for="course_name" class="form-label">Course Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="course_name" name="course_name" 
+                                   placeholder="Enter full course name"
+                                   value="{% if course_to_edit %}{{ course_to_edit.course_name }}{% elif form_data %}{{ form_data.course_name }}{% endif %}"
+                                   required maxlength="100">
+                        </div>
+
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"
+                                      placeholder="Brief description of the course">{% if course_to_edit %}{{ course_to_edit.description }}{% elif form_data %}{{ form_data.description }}{% endif %}</textarea>
+                        </div>
+
+                        <!-- Department -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="department" class="form-label">Department <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="department" name="department" 
+                                       placeholder="e.g., Computer Science, Mathematics"
+                                       value="{% if course_to_edit %}{{ course_to_edit.department }}{% elif form_data %}{{ form_data.department }}{% endif %}"
+                                       required maxlength="100">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="faculty_id" class="form-label">Assigned Faculty</label>
+                                <select class="form-select" id="faculty_id" name="faculty_id">
+                                    <option value="">Select Faculty (Optional)</option>
+                                    {% for faculty in faculty_members %}
+                                        <option value="{{ faculty.id }}" 
+                                                {% if (course_to_edit and course_to_edit.faculty_id == faculty.id) or (form_data and form_data.faculty_id|int == faculty.id) %}selected{% endif %}>
+                                            {{ faculty.name }} ({{ faculty.department }})
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Semester and Year -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="semester" class="form-label">Semester <span class="text-danger">*</span></label>
+                                <select class="form-select" id="semester" name="semester" required>
+                                    <option value="">Select Semester</option>
+                                    {% for i in range(1, 9) %}
+                                        <option value="{{ i }}" 
+                                                {% if (course_to_edit and course_to_edit.semester == i) or (form_data and form_data.semester|int == i) %}selected{% endif %}>
+                                            Semester {{ i }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="year" class="form-label">Academic Year <span class="text-danger">*</span></label>
+                                <select class="form-select" id="year" name="year" required>
+                                    <option value="">Select Year</option>
+                                    {% for year in range(2020, 2031) %}
+                                        <option value="{{ year }}" 
+                                                {% if (course_to_edit and course_to_edit.year == year) or (form_data and form_data.year|int == year) or (not course_to_edit and not form_data and year == 2024) %}selected{% endif %}>
+                                            {{ year }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Active Status (only for edit mode) -->
+                        {% if mode == 'edit' %}
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active"
+                                       {% if course_to_edit.is_active %}checked{% endif %}>
+                                <label class="form-check-label" for="is_active">
+                                    Active Status
+                                </label>
+                                <div class="form-text">Uncheck to deactivate this course</div>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <!-- Buttons -->
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin.manage_courses') }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left"></i> Back to Courses
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                {% if mode == 'add' %}
+                                    <i class="fas fa-plus"></i> Create Course
+                                {% else %}
+                                    <i class="fas fa-save"></i> Update Course
+                                {% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Help Section -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6 class="mb-0"><i class="fas fa-info-circle"></i> Guidelines</h6>
+                </div>
+                <div class="card-body">
+                    <ul class="mb-0">
+                        <li><strong>Course Code:</strong> Use a short, unique identifier (e.g., CS101, MATH201)</li>
+                        <li><strong>Course Name:</strong> Full descriptive name of the course</li>
+                        <li><strong>Credits:</strong> Number of credit hours (typically 1-10)</li>
+                        <li><strong>Department:</strong> Academic department offering the course</li>
+                        <li><strong>Faculty:</strong> Optional assignment of faculty member to teach the course</li>
+                        <li><strong>Semester:</strong> Which semester this course is typically offered</li>
+                        <li><strong>Year:</strong> Academic year for the course offering</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Auto-format course code to uppercase
+document.getElementById('course_code').addEventListener('input', function(e) {
+    e.target.value = e.target.value.toUpperCase();
+});
+
+// Department suggestions based on common departments
+document.getElementById('department').addEventListener('input', function(e) {
+    // You could implement auto-complete here if needed
+});
+</script>
+{% endblock %}

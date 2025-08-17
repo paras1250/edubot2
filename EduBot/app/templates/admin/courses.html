@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2>📚 Manage Courses</h2>
+                <a href="{{ url_for('admin.add_course') }}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Add New Course
+                </a>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <form method="GET" class="row g-3">
+                        <div class="col-md-4">
+                            <input type="text" name="search" class="form-control" 
+                                   placeholder="Search courses..." value="{{ search }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select name="department" class="form-select">
+                                <option value="">All Departments</option>
+                                {% for dept in departments %}
+                                    <option value="{{ dept }}" 
+                                            {% if dept == department_filter %}selected{% endif %}>
+                                        {{ dept }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-secondary">
+                                <i class="fas fa-search"></i> Search
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{{ url_for('admin.manage_courses') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-undo"></i> Clear
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Results Summary -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <span class="text-muted">
+                        Showing {{ courses.items|length }} of {{ courses.total }} courses
+                        {% if search %} for "{{ search }}"{% endif %}
+                        {% if department_filter %} in {{ department_filter }}{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Courses Table -->
+            {% if courses.items %}
+                <div class="card">
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover mb-0">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Course Name</th>
+                                    <th>Department</th>
+                                    <th>Credits</th>
+                                    <th>Semester/Year</th>
+                                    <th>Faculty</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for course in courses.items %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ course.course_code }}</strong>
+                                    </td>
+                                    <td>
+                                        {{ course.course_name }}
+                                        {% if course.description %}
+                                            <br><small class="text-muted">{{ course.description[:100] }}{% if course.description|length > 100 %}...{% endif %}</small>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ course.department }}</td>
+                                    <td>{{ course.credits }}</td>
+                                    <td>
+                                        Sem {{ course.semester }}, {{ course.year }}
+                                    </td>
+                                    <td>
+                                        {% if course.faculty %}
+                                            {{ course.faculty.name }}
+                                        {% else %}
+                                            <span class="text-muted">Not assigned</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if course.is_active %}
+                                            <span class="badge bg-success">Active</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Inactive</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('admin.edit_course', course_id=course.id) }}" 
+                                               class="btn btn-sm btn-outline-primary" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-warning" 
+                                                    onclick="toggleCourseStatus({{ course.id }})" 
+                                                    title="Toggle Status">
+                                                <i class="fas fa-toggle-on"></i>
+                                            </button>
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    onclick="deleteCourse({{ course.id }}, '{{ course.course_code }}')" 
+                                                    title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                {% if courses.pages > 1 %}
+                <nav aria-label="Courses pagination" class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if courses.has_prev %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.manage_courses', page=courses.prev_num, search=search, department=department_filter) }}">
+                                    <i class="fas fa-chevron-left"></i> Previous
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for page_num in courses.iter_pages() %}
+                            {% if page_num %}
+                                {% if page_num != courses.page %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ url_for('admin.manage_courses', page=page_num, search=search, department=department_filter) }}">
+                                            {{ page_num }}
+                                        </a>
+                                    </li>
+                                {% else %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_num }}</span>
+                                    </li>
+                                {% endif %}
+                            {% else %}
+                                <li class="page-item disabled">
+                                    <span class="page-link">...</span>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if courses.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('admin.manage_courses', page=courses.next_num, search=search, department=department_filter) }}">
+                                    Next <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                        <h5>No courses found</h5>
+                        <p class="text-muted">
+                            {% if search or department_filter %}
+                                No courses match your search criteria. Try adjusting your filters.
+                            {% else %}
+                                No courses have been added yet. Click "Add New Course" to get started.
+                            {% endif %}
+                        </p>
+                        {% if not search and not department_filter %}
+                            <a href="{{ url_for('admin.add_course') }}" class="btn btn-primary">
+                                <i class="fas fa-plus"></i> Add First Course
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Delete Course</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the course "<span id="courseCodeToDelete"></span>"?</p>
+                <p class="text-warning"><i class="fas fa-exclamation-triangle"></i> This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete Course</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function deleteCourse(courseId, courseCode) {
+    document.getElementById('courseCodeToDelete').textContent = courseCode;
+    document.getElementById('deleteForm').action = `/admin/courses/${courseId}/delete`;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function toggleCourseStatus(courseId) {
+    fetch(`/admin/courses/${courseId}/toggle-status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload(); // Refresh to show updated status
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+</script>
+{% endblock %}

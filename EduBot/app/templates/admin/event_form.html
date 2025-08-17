@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ 'Add Event' if mode == 'add' else 'Edit Event' }} - EduBot Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8f9fa;
+        }
+        .admin-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+        }
+        .form-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        .form-section {
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .form-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        .section-title {
+            color: #495057;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .form-floating > label {
+            color: #6c757d;
+        }
+        .btn-back {
+            color: #6c757d;
+            text-decoration: none;
+        }
+        .btn-back:hover {
+            color: #495057;
+        }
+        .required-field::after {
+            content: "*";
+            color: #dc3545;
+            margin-left: 2px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('admin.dashboard') }}">
+                <i class="fas fa-robot text-primary me-2"></i>EduBot Admin
+            </a>
+            
+            <div class="navbar-nav ms-auto">
+                <div class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-user-shield me-1"></i>{{ user.full_name }}
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{{ url_for('admin.dashboard') }}"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('admin.manage_events') }}"><i class="fas fa-calendar-alt me-2"></i>Manage Events</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('chat.chat_interface') }}"><i class="fas fa-comments me-2"></i>Chat Interface</a></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="fas fa-user me-2"></i>Profile</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{{ url_for('auth.logout') }}"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <div class="admin-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-5 fw-bold mb-0">
+                        <i class="fas fa-{{ 'plus' if mode == 'add' else 'edit' }} me-3"></i>{{ 'Add Event' if mode == 'add' else 'Edit Event' }}
+                    </h1>
+                    <p class="lead mb-0 opacity-75">
+                        {{ 'Create a new event for the college calendar' if mode == 'add' else 'Update event information' }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="{{ url_for('admin.manage_events') }}" class="btn btn-light btn-lg btn-back">
+                        <i class="fas fa-arrow-left me-2"></i>Back to Events
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Event Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="form-card p-4">
+                    <form method="POST" novalidate>
+                        <!-- Basic Information Section -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-info-circle me-2"></i>Basic Information
+                            </h5>
+                            
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="title" name="title" 
+                                               value="{{ event_to_edit.title if event_to_edit else (form_data.title if form_data else '') }}" 
+                                               required>
+                                        <label for="title" class="required-field">Event Title</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <select class="form-select" id="event_type" name="event_type" required>
+                                            <option value="">Choose event type...</option>
+                                            {% for type in event_types %}
+                                                <option value="{{ type }}" 
+                                                    {% if (event_to_edit and event_to_edit.event_type == type) or (form_data and form_data.event_type == type) %}
+                                                        selected
+                                                    {% endif %}>
+                                                    {{ type.title() }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                        <label for="event_type" class="required-field">Event Type</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="organizer" name="organizer" 
+                                               value="{{ event_to_edit.organizer if event_to_edit else (form_data.organizer if form_data else '') }}">
+                                        <label for="organizer">Organizer</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="form-floating">
+                                        <textarea class="form-control" id="description" name="description" 
+                                                  style="height: 120px" placeholder="Event description...">{{ event_to_edit.description if event_to_edit else (form_data.description if form_data else '') }}</textarea>
+                                        <label for="description">Description</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date and Time Section -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-calendar-alt me-2"></i>Date & Time
+                            </h5>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="date" class="form-control" id="start_date" name="start_date" 
+                                               value="{{ event_to_edit.start_date.strftime('%Y-%m-%d') if event_to_edit else (form_data.start_date if form_data else '') }}" 
+                                               required>
+                                        <label for="start_date" class="required-field">Start Date</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="date" class="form-control" id="end_date" name="end_date" 
+                                               value="{{ event_to_edit.end_date.strftime('%Y-%m-%d') if event_to_edit and event_to_edit.end_date else (form_data.end_date if form_data else '') }}">
+                                        <label for="end_date">End Date (optional)</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="time" class="form-control" id="start_time" name="start_time" 
+                                               value="{{ event_to_edit.start_time.strftime('%H:%M') if event_to_edit and event_to_edit.start_time else (form_data.start_time if form_data else '') }}">
+                                        <label for="start_time">Start Time (optional)</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="time" class="form-control" id="end_time" name="end_time" 
+                                               value="{{ event_to_edit.end_time.strftime('%H:%M') if event_to_edit and event_to_edit.end_time else (form_data.end_time if form_data else '') }}">
+                                        <label for="end_time">End Time (optional)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Location Section -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-map-marker-alt me-2"></i>Location
+                            </h5>
+                            
+                            <div class="form-floating">
+                                <input type="text" class="form-control" id="location" name="location" 
+                                       value="{{ event_to_edit.location if event_to_edit else (form_data.location if form_data else '') }}">
+                                <label for="location">Event Location</label>
+                            </div>
+                        </div>
+
+                        <!-- Options Section -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-cog me-2"></i>Options
+                            </h5>
+                            
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="is_holiday" name="is_holiday" 
+                                               {% if (event_to_edit and event_to_edit.is_holiday) or (form_data and form_data.get('is_holiday')) %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_holiday">
+                                            <i class="fas fa-star text-warning me-2"></i>Mark as Holiday
+                                        </label>
+                                    </div>
+                                </div>
+                                
+                                {% if mode == 'edit' %}
+                                <div class="col-md-6">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="is_active" name="is_active" 
+                                               {% if event_to_edit.is_active %}checked{% endif %}>
+                                        <label class="form-check-label" for="is_active">
+                                            <i class="fas fa-toggle-on text-success me-2"></i>Event Active
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="d-flex gap-3 justify-content-end">
+                            <a href="{{ url_for('admin.manage_events') }}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-{{ 'plus' if mode == 'add' else 'save' }} me-2"></i>
+                                {{ 'Create Event' if mode == 'add' else 'Update Event' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form validation
+            const form = document.querySelector('form');
+            const titleField = document.getElementById('title');
+            const eventTypeField = document.getElementById('event_type');
+            const startDateField = document.getElementById('start_date');
+            const endDateField = document.getElementById('end_date');
+            const startTimeField = document.getElementById('start_time');
+            const endTimeField = document.getElementById('end_time');
+
+            // Real-time validation
+            titleField.addEventListener('input', function() {
+                if (this.value.length < 3) {
+                    this.setCustomValidity('Event title must be at least 3 characters long');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+
+            // Date validation
+            startDateField.addEventListener('change', function() {
+                const startDate = new Date(this.value);
+                const endDate = new Date(endDateField.value);
+                
+                if (endDateField.value && endDate < startDate) {
+                    endDateField.setCustomValidity('End date cannot be before start date');
+                } else {
+                    endDateField.setCustomValidity('');
+                }
+            });
+
+            endDateField.addEventListener('change', function() {
+                const startDate = new Date(startDateField.value);
+                const endDate = new Date(this.value);
+                
+                if (this.value && endDate < startDate) {
+                    this.setCustomValidity('End date cannot be before start date');
+                } else {
+                    this.setCustomValidity('');
+                }
+            });
+
+            // Time validation
+            function validateTimes() {
+                if (startTimeField.value && endTimeField.value) {
+                    const startTime = startTimeField.value;
+                    const endTime = endTimeField.value;
+                    
+                    // Only validate if it's the same day or no end date
+                    if (!endDateField.value || startDateField.value === endDateField.value) {
+                        if (endTime <= startTime) {
+                            endTimeField.setCustomValidity('End time must be after start time');
+                        } else {
+                            endTimeField.setCustomValidity('');
+                        }
+                    } else {
+                        endTimeField.setCustomValidity('');
+                    }
+                }
+            }
+
+            startTimeField.addEventListener('change', validateTimes);
+            endTimeField.addEventListener('change', validateTimes);
+
+            // Form submission validation
+            form.addEventListener('submit', function(e) {
+                if (!form.checkValidity()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+                form.classList.add('was-validated');
+            });
+
+            // Event type specific features
+            eventTypeField.addEventListener('change', function() {
+                const isHolidayCheckbox = document.getElementById('is_holiday');
+                
+                if (this.value === 'holiday') {
+                    isHolidayCheckbox.checked = true;
+                }
+            });
+
+            // Auto-suggest features
+            const today = new Date().toISOString().split('T')[0];
+            if (!startDateField.value) {
+                startDateField.min = today;
+            }
+            
+            startDateField.addEventListener('change', function() {
+                endDateField.min = this.value;
+            });
+        });
+    </script>
+</body>
+</html>

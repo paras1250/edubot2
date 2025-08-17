@@ -1,0 +1,395 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if form_user %}Edit User{% else %}Add New User{% endif %} - Admin Dashboard
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-user-{{ 'edit' if form_user else 'plus' }} me-2"></i>
+                            {% if form_user %}
+                                Edit User: {{ form_user.username }}
+                            {% else %}
+                                Add New User
+                            {% endif %}
+                        </h3>
+                        <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Users
+                        </a>
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <!-- Display Flash Messages -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    <form method="POST" novalidate>
+                        {% if form.csrf_token %}
+                            {{ form.csrf_token }}
+                        {% endif %}
+                        
+                        <div class="row">
+                            <!-- Personal Information -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-user me-2"></i>Personal Information
+                                </h5>
+                                
+                                <!-- First Name -->
+                                <div class="mb-3">
+                                    {{ form.first_name.label(class="form-label") }}
+                                    {{ form.first_name(class="form-control" + (" is-invalid" if form.first_name.errors else "")) }}
+                                    {% if form.first_name.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.first_name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Last Name -->
+                                <div class="mb-3">
+                                    {{ form.last_name.label(class="form-label") }}
+                                    {{ form.last_name(class="form-control" + (" is-invalid" if form.last_name.errors else "")) }}
+                                    {% if form.last_name.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.last_name.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Email -->
+                                <div class="mb-3">
+                                    {{ form.email.label(class="form-label") }}
+                                    {{ form.email(class="form-control" + (" is-invalid" if form.email.errors else "")) }}
+                                    {% if form.email.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.email.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Used for login and notifications
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Account Information -->
+                            <div class="col-md-6">
+                                <h5 class="mb-3">
+                                    <i class="fas fa-cog me-2"></i>Account Information
+                                </h5>
+                                
+                                <!-- Username -->
+                                <div class="mb-3">
+                                    {{ form.username.label(class="form-label") }}
+                                    {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
+                                    {% if form.username.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.username.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Unique username for login
+                                    </div>
+                                </div>
+
+                                <!-- Role -->
+                                <div class="mb-3">
+                                    {{ form.role.label(class="form-label") }}
+                                    {{ form.role(class="form-select" + (" is-invalid" if form.role.errors else "")) }}
+                                    {% if form.role.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.role.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Determines user permissions and access level
+                                    </div>
+                                </div>
+
+                                <!-- Active Status -->
+                                <div class="mb-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.is_active(class="form-check-input" + (" is-invalid" if form.is_active.errors else "")) }}
+                                        {{ form.is_active.label(class="form-check-label") }}
+                                        {% if form.is_active.errors %}
+                                            <div class="invalid-feedback">
+                                                {% for error in form.is_active.errors %}
+                                                    {{ error }}
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="form-text">
+                                        Inactive users cannot log in to the system
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password Section -->
+                        <hr class="my-4">
+                        <h5 class="mb-3">
+                            <i class="fas fa-lock me-2"></i>
+                            {% if form_user %}Change Password{% else %}Set Password{% endif %}
+                        </h5>
+                        
+                        {% if form_user %}
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Leave password fields empty to keep the current password unchanged.
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <!-- Password -->
+                                <div class="mb-3">
+                                    {{ form.password.label(class="form-label") }}
+                                    {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
+                                    {% if form.password.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.password.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <div class="form-text">
+                                        Minimum 8 characters with letters and numbers
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <!-- Confirm Password -->
+                                <div class="mb-3">
+                                    {{ form.confirm_password.label(class="form-label") }}
+                                    {{ form.confirm_password(class="form-control" + (" is-invalid" if form.confirm_password.errors else "")) }}
+                                    {% if form.confirm_password.errors %}
+                                        <div class="invalid-feedback">
+                                            {% for error in form.confirm_password.errors %}
+                                                {{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Password Strength Indicator -->
+                        <div class="mb-3">
+                            <div class="password-strength" style="display: none;">
+                                <small class="text-muted">Password Strength:</small>
+                                <div class="progress" style="height: 5px;">
+                                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                                </div>
+                                <small class="strength-text text-muted"></small>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <hr class="my-4">
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            
+                            <div>
+                                {% if form_user %}
+                                    <button type="submit" name="action" value="save" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Update User
+                                    </button>
+                                {% else %}
+                                    <button type="submit" name="action" value="save" class="btn btn-primary">
+                                        <i class="fas fa-plus me-2"></i>Create User
+                                    </button>
+                                {% endif %}
+                                
+                                <button type="submit" name="action" value="save_and_continue" class="btn btn-success">
+                                    <i class="fas fa-check me-2"></i>
+                                    {% if form_user %}Save & Continue{% else %}Create & Add Another{% endif %}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Additional Information for Edit Mode -->
+            {% if form_user %}
+            <div class="card shadow mt-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-info-circle me-2"></i>User Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>User ID:</strong> {{ form_user.id }}</p>
+                            <p><strong>Created:</strong> 
+                                {{ form_user.created_at.strftime('%B %d, %Y at %I:%M %p') if form_user.created_at else 'Unknown' }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Last Updated:</strong> 
+                                {{ form_user.updated_at.strftime('%B %d, %Y at %I:%M %p') if form_user.updated_at else 'Never' }}
+                            </p>
+                            <p><strong>Current Status:</strong> 
+                                <span class="badge {{ 'bg-success' if form_user.is_active else 'bg-danger' }}">
+                                    {{ 'Active' if form_user.is_active else 'Inactive' }}
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordField = document.getElementById('password');
+    const confirmPasswordField = document.getElementById('confirm_password');
+    const strengthIndicator = document.querySelector('.password-strength');
+    const progressBar = strengthIndicator.querySelector('.progress-bar');
+    const strengthText = strengthIndicator.querySelector('.strength-text');
+
+    // Password strength checker
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        let text = '';
+        let color = '';
+
+        if (password.length >= 8) strength += 1;
+        if (/[a-z]/.test(password)) strength += 1;
+        if (/[A-Z]/.test(password)) strength += 1;
+        if (/[0-9]/.test(password)) strength += 1;
+        if (/[^A-Za-z0-9]/.test(password)) strength += 1;
+
+        switch (strength) {
+            case 0:
+            case 1:
+                text = 'Very Weak';
+                color = 'bg-danger';
+                break;
+            case 2:
+                text = 'Weak';
+                color = 'bg-warning';
+                break;
+            case 3:
+                text = 'Fair';
+                color = 'bg-info';
+                break;
+            case 4:
+                text = 'Good';
+                color = 'bg-primary';
+                break;
+            case 5:
+                text = 'Strong';
+                color = 'bg-success';
+                break;
+        }
+
+        return { strength: (strength / 5) * 100, text, color };
+    }
+
+    // Handle password input
+    passwordField.addEventListener('input', function() {
+        const password = this.value;
+        
+        if (password.length > 0) {
+            strengthIndicator.style.display = 'block';
+            const result = checkPasswordStrength(password);
+            
+            progressBar.style.width = result.strength + '%';
+            progressBar.className = 'progress-bar ' + result.color;
+            strengthText.textContent = result.text;
+        } else {
+            strengthIndicator.style.display = 'none';
+        }
+    });
+
+    // Real-time password confirmation validation
+    confirmPasswordField.addEventListener('input', function() {
+        const password = passwordField.value;
+        const confirmPassword = this.value;
+        
+        if (confirmPassword.length > 0) {
+            if (password === confirmPassword) {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        } else {
+            this.classList.remove('is-valid', 'is-invalid');
+        }
+    });
+
+    // Form validation before submit
+    document.querySelector('form').addEventListener('submit', function(e) {
+        const password = passwordField.value;
+        const confirmPassword = confirmPasswordField.value;
+        
+        // Only validate passwords if they're provided (for edit mode)
+        if (password || confirmPassword) {
+            if (password !== confirmPassword) {
+                e.preventDefault();
+                confirmPasswordField.classList.add('is-invalid');
+                
+                // Show alert
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-danger alert-dismissible fade show';
+                alert.innerHTML = `
+                    Passwords do not match. Please check and try again.
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                
+                const cardBody = document.querySelector('.card-body');
+                cardBody.insertBefore(alert, cardBody.firstChild);
+                
+                return false;
+            }
+        }
+    });
+
+    // Auto-dismiss alerts after 5 seconds
+    setTimeout(function() {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(function(alert) {
+            if (alert.querySelector('.btn-close')) {
+                bootstrap.Alert.getOrCreateInstance(alert).close();
+            }
+        });
+    }, 5000);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block title %}Manage Attendance - Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title mb-0">
+                        <i class="fas fa-calendar-check me-2"></i>
+                        Attendance Management
+                    </h3>
+                    <a href="{{ url_for('admin.add_attendance') }}" class="btn btn-primary">
+                        <i class="fas fa-plus me-2"></i>Add Attendance Record
+                    </a>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Search and Filter Form -->
+                    <div class="row mb-4">
+                        <div class="col-md-10">
+                            <form method="GET" class="d-flex flex-wrap gap-2">
+                                <input type="text" 
+                                       name="search" 
+                                       class="form-control" 
+                                       placeholder="Search by student name or ID..."
+                                       value="{{ search }}"
+                                       style="max-width: 250px;">
+                                
+                                <select name="status" class="form-select" style="max-width: 150px;">
+                                    <option value="">All Status</option>
+                                    <option value="present" {{ 'selected' if status_filter == 'present' }}>Present</option>
+                                    <option value="absent" {{ 'selected' if status_filter == 'absent' }}>Absent</option>
+                                    <option value="late" {{ 'selected' if status_filter == 'late' }}>Late</option>
+                                </select>
+                                
+                                <input type="date" 
+                                       name="date" 
+                                       class="form-control" 
+                                       value="{{ date_filter }}"
+                                       style="max-width: 150px;">
+                                
+                                <button type="submit" class="btn btn-outline-primary">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                                
+                                <a href="{{ url_for('admin.manage_attendance') }}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times"></i>
+                                </a>
+                            </form>
+                        </div>
+                        
+                        <div class="col-md-2 text-end">
+                            <span class="text-muted">
+                                Total: {{ attendance_records.total }} records
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Table -->
+                    {% if attendance_records.items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Student</th>
+                                    <th>Course</th>
+                                    <th>Status</th>
+                                    <th>Notes</th>
+                                    <th>Marked By</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in attendance_records.items %}
+                                <tr>
+                                    <td>{{ record.date.strftime('%Y-%m-%d') if record.date }}</td>
+                                    <td>
+                                        <strong>{{ record.student.first_name }} {{ record.student.last_name }}</strong><br>
+                                        <small class="text-muted">{{ record.student.username }}</small>
+                                    </td>
+                                    <td>{{ record.course.name if record.course else 'N/A' }}</td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if record.status == 'present' %}bg-success
+                                            {% elif record.status == 'absent' %}bg-danger
+                                            {% elif record.status == 'late' %}bg-warning
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ record.status.title() }}
+                                        </span>
+                                    </td>
+                                    <td>{{ record.notes or '-' }}</td>
+                                    <td>
+                                        <small class="text-muted">
+                                            {{ record.marked_by_user.first_name }} {{ record.marked_by_user.last_name }}<br>
+                                            {{ record.created_at.strftime('%Y-%m-%d %H:%M') if record.created_at }}
+                                        </small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm" role="group">
+                                            <a href="{{ url_for('admin.edit_attendance', attendance_id=record.id) }}" 
+                                               class="btn btn-outline-primary" 
+                                               title="Edit Attendance">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            
+                                            <button type="button" 
+                                                    class="btn btn-outline-danger delete-attendance" 
+                                                    data-attendance-id="{{ record.id }}"
+                                                    data-student-name="{{ record.student.first_name }} {{ record.student.last_name }}"
+                                                    data-date="{{ record.date.strftime('%Y-%m-%d') if record.date }}"
+                                                    title="Delete Attendance">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    {% if attendance_records.pages > 1 %}
+                    <nav aria-label="Attendance pagination">
+                        <ul class="pagination justify-content-center">
+                            {% if attendance_records.has_prev %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin.manage_attendance', page=attendance_records.prev_num, search=search, status=status_filter, date=date_filter) }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for page_num in attendance_records.iter_pages() %}
+                                {% if page_num %}
+                                    {% if page_num != attendance_records.page %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ url_for('admin.manage_attendance', page=page_num, search=search, status=status_filter, date=date_filter) }}">{{ page_num }}</a>
+                                        </li>
+                                    {% else %}
+                                        <li class="page-item active">
+                                            <span class="page-link">{{ page_num }}</span>
+                                        </li>
+                                    {% endif %}
+                                {% else %}
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if attendance_records.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin.manage_attendance', page=attendance_records.next_num, search=search, status=status_filter, date=date_filter) }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                    
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-calendar-check fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No attendance records found</h5>
+                        <p class="text-muted">
+                            {% if search or status_filter or date_filter %}
+                                Try adjusting your search criteria.
+                            {% else %}
+                                Get started by adding your first attendance record.
+                            {% endif %}
+                        </p>
+                        <a href="{{ url_for('admin.add_attendance') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Attendance Record
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle text-warning me-2"></i>
+                    Confirm Deletion
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete attendance record for <strong id="deleteStudentName"></strong> on <strong id="deleteDate"></strong>?</p>
+                <p class="text-danger small">
+                    <i class="fas fa-exclamation-circle me-1"></i>
+                    This action cannot be undone.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="POST" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash me-2"></i>Delete Record
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle delete confirmation
+    document.querySelectorAll('.delete-attendance').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const attendanceId = this.dataset.attendanceId;
+            const studentName = this.dataset.studentName;
+            const date = this.dataset.date;
+            
+            document.getElementById('deleteStudentName').textContent = studentName;
+            document.getElementById('deleteDate').textContent = date;
+            document.getElementById('deleteForm').action = `/admin/attendance/${attendanceId}/delete`;
+            
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        });
+    });
+});
+</script>
+{% endblock %}
